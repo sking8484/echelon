@@ -15,7 +15,7 @@ sns.set_style("darkgrid")
 
 
 class EchelonBT():
-    def __init__(self, stock_list, master_dataframe, weights,place_trades, long_only):
+    def __init__(self, stock_list = "[]", master_dataframe = "DataFrame", weights= "Weights DataFrame",place_trades= "BOOL", long_only= "BOOL"):
 
         self.stock_list = stock_list
         self.master_dataframe = master_dataframe

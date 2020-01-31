@@ -13,11 +13,18 @@ num_periods = 10
 for stock in stock_list:
     weights_master[stock] = (data_master[stock] - data_master[stock].shift(num_periods))/num_periods
 
-print(weights_master)
 
 
 
 
 
-app = TestApp(stock_list, "TEST", weights_master, False, True)
+
+app = TestApp()
+
+app.stock_list = stock_list
+app.master_dataframe = "TEST"
+app.weights = weights_master
+app.place_trades = False
+app.long_only= True
+
 app.run()
