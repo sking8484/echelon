@@ -5,19 +5,14 @@ import statsmodels.api as sm
 
 import datetime
 import seaborn as sns
-
 sns.set_style("darkgrid")
-
-
-
-
-
-
 
 class EchelonBT():
     def __init__(self, stock_list = "Your Universe", master_dataframe = "Your Master DataFrame, Closes, OHLC, etc...", weights= "Weights DataFrame",place_trades= "BOOL", long_only= "BOOL"):
 
         """Initilialize the backtest.
+
+        ******** Any DataFrame that you pass MUST have columns equal to self.stock_list
 
         Example:
 
@@ -69,9 +64,27 @@ class EchelonBT():
 
     #create dataframes
 
+    def signal_weights(self):
+        """*****/*****
+
+        Multiplies your weights by the signals given. Signals is returned from the create signals function. The columns must be equal to the stock list.
+
+        *****/*****"""
+        self.weights.fillna(0, inplace = True)
+        weighted_signals = pd.DataFrame(index = self.master_dataframe.index)
+        for stock in self.stock_list:
+            weighted_signals[stock] = self.weights[stock] * self.signals[stock]
+
+        return weighted_signals
+
     def normalize_weights(self, row):
-        """HELPER FUNCTION NORMALIZING WEIGHTS CALLED FROM RUN"""
+        """*****/*****
+
+        HELPER FUNCTION NORMALIZING WEIGHTS CALLED FROM RUN
+
+        *****/*****"""
         if self.long_only:
+
             long_weights = []
             for x in row:
                 if x<0:
@@ -88,25 +101,42 @@ class EchelonBT():
 
     def create_signals(self):
         #USE THIS FUNCTION NAME TO CREATE YOUR SIGNALS
-        """Overwrite this function. This function must return a dataframe of your returns, where columns are equal to your stock list and the values are the returns of your strategy.  Do NOT weight your returns. This will be done automatically using the weights you passed the class. Find an example below.
+        """
+        *****/*****
 
+        Overwrite this function. This function must return two dataframes.
+            1.) The returns of the trades in a dataframe.
+                a.) These should not be cumualtive
+                b.) The columns need to equal the stock list columns
+            2.) The signals
+                a.) The columns need to equal the stock list columns
+                b.) this will be used to calculate the portfolio weights
+         Find an example below.
+
+        *****/*****
         *****/*****
 
         interim_df = pd.DataFrame(index = self.master_dataframe.index)
         trades_df = pd.DataFrame(index = self.master_dataframe.index)
+        signals_df = pd.DataFrame(index = self.master_dataframe.index)
 
         for x in self.stock_list:
-            interim_df[x+'_pct_change'] = self.master_dataframe[x].pct_change()
+            interim_df[x+'_pct_change'] = self.master_dataframe[x].pct_change().shift(-1)
             interim_df[x + 'MA'] = self.master_dataframe[x].rolling(window = 15).mean()
 
             signals = (interim_df[x+'MA']<self.master_dataframe[x])
+            signals_df[x] = signals
             interim_df[x + 'trades'] = 0
 
-            interim_df[x + 'trades'][signals] = interim_df[x+'_pct_change'].shift(-1)
+            interim_df[x + 'trades'][signals] = (interim_df[x+'_pct_change'][signals])
+
+
+
 
             trades_df[x] = interim_df[x+'trades']
 
-        return trades_df,signals
+        return trades_df,signals_df
+        *****/*****
 
         """
         pass
@@ -120,6 +150,8 @@ class EchelonBT():
         if self.statistics:
             """
 
+            *****/*****
+
             This automatically creates statistics
 
             Currently including the position size as a percentage of your portfolio, your portfolio returns plotted as a chart, and your portfolio returns split into month and year plotted as a heatmap.
@@ -130,6 +162,8 @@ class EchelonBT():
                 rolling sharpe of your portfolio
                 rolling correlation to the sp500 your portfolio
                 and more
+
+            *****/*****
 
             """
             #THIS IS WHERE THE STATISTICS AND PLOTS WILL BE GENERATED
@@ -196,21 +230,16 @@ class EchelonBT():
             plt.show()
 
 
-    # def help(self):
-    #     help_string = "****/****\nYou've asked for help. Smart.\n****/****\nInitializing:\n\tEchelonBT requires 5 arguments to be set.\n\t\tstock_list::List, your universe of stocks. \n\t\t\tUsed to iterate through your dataframes and create the necessary data.\
-    #     "
-    #     print(help_string)
-
-
     def run(self):
         """NORMALIZING WEIGHTS"""
-
-        self.weights = self.weights.apply(self.normalize_weights, axis = 1).fillna(0)
-
 
         print("Your weights have been normalized for a long only strategy")
 
         """RUNNING FUNCTIONS"""
-        self.returns = self.create_signals()
+        self.returns, self.signals = self.create_signals()
+
+        self.weights = self.signal_weights()
+        self.weights = self.weights.apply(self.normalize_weights, axis = 1).fillna(0)
+        print(self.weights)
         self.create_trades()
         self.statistics()

@@ -14,13 +14,13 @@ weights_master = pd.DataFrame(index = app_goog.index)
 
 num_periods = 10
 for stock in stock_list:
-    weights_master[stock] = (data_master[stock] - data_master[stock].shift(num_periods))/num_periods
+    weights_master[stock] = (data_master[stock].shift(1) - data_master[stock].shift(num_periods))/num_periods
 
 
 
 def backtest():
     app = TestApp()
-    help(app)
+    #help(app)
 
     app.stock_list = stock_list
     app.master_dataframe = app_goog

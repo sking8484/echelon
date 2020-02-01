@@ -30,4 +30,4 @@ class TestApp(EchelonBT):
 
             trades_df[x] = interim_df[x+'trades']
 
-        return trades_df
+        return trades_df,signals_df
